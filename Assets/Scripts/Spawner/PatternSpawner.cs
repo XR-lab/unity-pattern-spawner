@@ -30,7 +30,7 @@ public sealed class PatternSpawner
         _allPatterns = Resources.LoadAll<GameObject>("Patterns");
         container = new GameObject("Spawn Container");
     }
-    
+
     private GameObject[] _allPatterns;
 
     private Dictionary<string, SpawnPatternLibrary.SpawnElement> _typeCache;
@@ -61,12 +61,13 @@ public sealed class PatternSpawner
 
         onPatternSpawned?.Invoke(spawnedObjects);
     }
-    
+
     private GameObject SpawnObject(Transform spawnPoint, float x, float y, float z)
     {
         var pointSettings = spawnPoint.GetComponent<SpawnPoint>();
-        var matchedLibraryElement = MatchLibraryElement(pointSettings);
-        var newPrefab = InstantiatePrefab(matchedLibraryElement.prefab, x + spawnPoint.position.x, y + spawnPoint.position.y,
+        var matchedLibraryElement = GetLibraryElement(pointSettings);
+        var newPrefab = InstantiatePrefab(matchedLibraryElement.prefab, x + spawnPoint.position.x,
+            y + spawnPoint.position.y,
             z + spawnPoint.position.z);
         Customize(newPrefab, matchedLibraryElement);
         return newPrefab;
@@ -98,26 +99,31 @@ public sealed class PatternSpawner
         _typeCache = new Dictionary<string, SpawnPatternLibrary.SpawnElement>();
     }
 
-    public SpawnPatternLibrary.SpawnElement MatchLibraryElement(SpawnPoint settings)
+    public SpawnPatternLibrary.SpawnElement GetLibraryElement(SpawnPoint settings)
     {
         SpawnPatternLibrary.SpawnElement targetLibraryElement;
-        if (settings.Type != "" && _typeCache.ContainsKey(settings.Type))
-        {
-            targetLibraryElement = _typeCache[settings.Type];
-        }
-        else
-        {
-            var possiblePrefabs = SpawnPatternLibrary.Instance.data
-                .Where(item => item.volume >= settings.MinVolume && item.volume <= settings.MaxVolume).ToList();
-            if (possiblePrefabs.Count == 0)
-                Debug.Log("No object found to spawn with spawnpoint settings: Minvolume: " + settings.MinVolume +
-                                 ", MaxVolume: " + settings.MaxVolume);
-            
-            var randomIndex = Random.Range(0, possiblePrefabs.Count);
-            targetLibraryElement = possiblePrefabs[randomIndex];
-        }
+        
+        targetLibraryElement = TypeIsCached(settings) ? _typeCache[settings.Type] : MatchLibraryElement(settings);
 
         _typeCache[settings.Type] = targetLibraryElement;
         return targetLibraryElement;
+    }
+
+    private SpawnPatternLibrary.SpawnElement MatchLibraryElement(SpawnPoint settings)
+    {
+        var possiblePrefabs = SpawnPatternLibrary.Instance.data
+            .Where(item => item.volume >= settings.MinVolume && item.volume <= settings.MaxVolume).ToList();
+
+        if (possiblePrefabs.Count == 0)
+            Debug.Log("No object found to spawn with spawnpoint settings: Minvolume: " + settings.MinVolume +
+                      ", MaxVolume: " + settings.MaxVolume);
+
+        var randomIndex = Random.Range(0, possiblePrefabs.Count);
+        return possiblePrefabs[randomIndex];
+    }
+
+    private bool TypeIsCached(SpawnPoint settings)
+    {
+        return settings.Type != "" && _typeCache.ContainsKey(settings.Type);
     }
 }

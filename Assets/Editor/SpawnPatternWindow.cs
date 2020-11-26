@@ -108,7 +108,7 @@ public class SpawnPatternWindow : EditorWindow {
 		{
 			var spawnPoint = obj.GetComponent<SpawnPoint>();
 
-			var matchedElement = PatternSpawner.Instance.MatchLibraryElement(spawnPoint);
+			var matchedElement = PatternSpawner.Instance.GetLibraryElement(spawnPoint);
 
 			var newElement = Instantiate(matchedElement.prefab);
 			newElement.transform.position = obj.transform.position;
